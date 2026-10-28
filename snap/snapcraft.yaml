@@ -52,7 +52,7 @@ parts:
       rm -rf $CRAFT_PART_SRC/*
 
       if [[ -n $arch ]]; then
-        curl -LO --retry-connrefused --retry 10 https://ziglang.org/download/0.15.2/zig-$arch-linux-0.15.2.tar.xz
+        curl -LO --retry-connrefused --retry 10 https://ziglang.org/download/0.16.0/zig-$arch-linux-0.16.0.tar.xz
       else
         echo "Unsupported arch"
         exit 1
@@ -61,6 +61,9 @@ parts:
       tar xf zig-$arch-lin*xz
       rm -f *xz
       mv zig-$arch-linux*/* .
+
+      # TODO: remove after IPv6 resolv.conf resolution is fixed in Zig
+      ln --symbolic --force /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
     prime:
       - -*
 
@@ -76,6 +79,12 @@ parts:
       - git
       - patchelf
       - gettext
+      - libbz2-dev
+      - libfontconfig-dev
+      - libfreetype-dev
+      - libharfbuzz-dev
+      - libpng-dev
+      - zlib1g-dev
     # TODO: Remove -fno-sys=gtk4-layer-shell when we upgrade to a version that packages it Ubuntu 24.10+
     override-build: |
       craftctl set version=$(cat VERSION)
@@ -84,7 +93,12 @@ parts:
         -Dpatch-rpath=\$ORIGIN/../usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:/snap/core24/current/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR \
         -Doptimize=ReleaseFast \
         -Dcpu=baseline \
-        -fno-sys=gtk4-layer-shell
+        -fno-sys=gtk4-layer-shell \
+        -fsys=freetype \
+        -fsys=fontconfig \
+        -fsys=harfbuzz \
+        -fsys=libpng \
+        -fsys=zlib
       cp -rp zig-out/* $CRAFT_PART_INSTALL/
       sed -i 's|Icon=com.mitchellh.ghostty|Icon=${SNAP}/share/icons/hicolor/512x512/apps/com.mitchellh.ghostty.png|g' $CRAFT_PART_INSTALL/share/applications/com.mitchellh.ghostty.desktop
 
